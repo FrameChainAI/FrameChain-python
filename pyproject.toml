@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "framechain"
+version = "0.1.0"
+description = ""
+authors = ["Jacob Valdez <jacobfv123@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pydantic = "^2.5.3"
+numpy = "^1.26.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
