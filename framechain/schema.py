@@ -47,7 +47,7 @@ class Runnable(ABC):
     @abstractmethod
     def pre_run(self, inputs: RunInput | None) -> RunInput | None:
         """Called before the main _run method. Good place for logging, validation, etc."""
-        pass
+        return inputs
 
     @abstractmethod
     def _run(self, inputs: RunInput | None) -> RunOutput | None:
@@ -59,7 +59,7 @@ class Runnable(ABC):
         self, inputs: RunInput | None, outputs: RunOutput | None
     ) -> RunOutput | None:
         """Called after the main _run method. Good place for logging, validation, etc."""
-        pass
+        return outputs
 
     def __call__(self, inputs: RunInput | None) -> RunOutput | None:
         return self.run(**inputs)
@@ -109,6 +109,9 @@ class ParallelRunnables(CompositeRunnable):
 
 class Chain(Runnable, Serializable, ABC):
 
+    inputs: list[str]
+    outputs: list[str]
+
     @classmethod
     def from_func(cls, **kwargs):
         def dec(func: Callable):
@@ -117,20 +120,39 @@ class Chain(Runnable, Serializable, ABC):
             return type(name, bases, {"func": func, **kwargs})
         return dec
 
+import inspect
+
 class FunctionalChain(Chain):
     func: Callable
 
     def _run(self, inputs: RunInput | None) -> RunOutput | None:
-        return self.func(**inputs)
+        if inspect.signature(self.func).parameters.get('self') is not None:
+            return self.func(self, **inputs)
+        else:
+            return self.func(**inputs)
 
     def serialize(self) -> str:
         func_code = self.func.__code__.co_code
         return hashlib.sha256(func_code).hexdigest()
 
 
-def chain(base_chain: type[Chain] = Chain, /, **kwargs):
+def chain(inputs: list[str], outputs: list[str], base_chain: type[Chain] = Chain, **kwargs):
+    """Makes a chain from a single function.
+    
+    Example:
+        ```python
+        @chain(inputs=["image"], outputs=["image"])
+        def my_chain(inputs: RunInput) -> RunOutput:
+            return inputs
+        ```
+        
+    Note: This decorator returns a `Chain` instance, not a `Chain` subclass.
+            If you want a new subclass, use the `Chain.from_func` classmethod
+            or consider subclassing `Chain` directly.
+    """
     def dec(func: Callable):
-        return base_chain.from_func(func, **kwargs)
+        NewChain = base_chain.from_func(func, inputs=inputs, outputs=outputs, **kwargs)
+        return NewChain()
 
     return dec
 
