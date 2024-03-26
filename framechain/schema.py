@@ -134,86 +134,53 @@ class ParallelRunnables(CompositeRunnable):
 
 class Chain(Runnable, Serializable, ABC):
 
-    min_input_size: Optional[Size]
-    max_input_size: Optional[Size]
-    _preferred_input_size: Optional[Size]
+    min_input_size: Optional[Size] = None
+    max_input_size: Optional[Size] = None
+    preferred_input_size: Optional[Size] = None
     scale_inputs: bool = False
-    input_channels: int
+    standardize_input_channels: bool = False
+    standard_input_channels: Optional[int] = 3
     input_scaling_mode: ScalingMode
     standardize_input_format: bool = True
+    standard_input_format: ImageFormat = ImageFormat.np
 
-    min_output_size: Optional[Size]
-    max_output_size: Optional[Size]
-    _preferred_output_size: Optional[Size]
+    min_output_size: Optional[Size] = None
+    max_output_size: Optional[Size] = None
+    preferred_output_size: Optional[Size] = None
     scale_outputs: bool = False
-    output_channels: int
+    standardize_output_channels: bool = False
+    standard_output_channels: Optional[int] = 3
     output_scaling_mode: ScalingMode
     standardize_output_format: bool = True
-
-    @property
-    def preferred_input_size(self) -> Optional[Size]:
-        """The preferred input size for the model."""
-        return self._get_preferred_size(self._preferred_input_size, self.min_input_size, self.max_input_size)
-
-    @preferred_input_size.setter
-    def preferred_input_size(self, preferred_input_size: Size):
-        """
-        Set the preferred input size for the model.
-        Raises an error if the preferred size is outside the current bounds.
-        """
-        self._set_preferred_size(preferred_input_size, self.min_input_size, self.max_input_size)
-        self._preferred_input_size = preferred_input_size
-
-    @property
-    def preferred_output_size(self) -> Optional[Size]:
-        """The preferred output size for the model."""
-        return self._get_preferred_size(self._preferred_output_size, self.min_output_size, self.max_output_size)
-
-    @preferred_output_size.setter
-    def preferred_output_size(self, preferred_output_size: Size):
-        """
-        Set the preferred output size for the model.
-        Raises an error if the preferred size is outside the current bounds.
-        """
-        self._set_preferred_size(preferred_output_size, self.min_output_size, self.max_output_size)
-        self._preferred_output_size = preferred_output_size
-
-    def _get_preferred_size(self, preferred_size: Optional[Size], min_size: Optional[Size], max_size: Optional[Size]) -> Optional[Size]:
-        if preferred_size is not None:
-            return preferred_size
-        match min_size, max_size:
-            case (min_w, min_h), (max_w, max_h):
-                return (min_w + max_w) // 2, (min_h + max_h) // 2
-            case (min_w, min_h), _:
-                return min_w, min_h
-            case _, (max_w, max_h):
-                return max_w, max_h
-            case _, _:
-                return None
-
-    def _set_preferred_size(self, preferred_size: Size, min_size: Optional[Size], max_size: Optional[Size]):
-        preferred_width, preferred_height = preferred_size
-        if min_size is not None:
-            min_width, min_height = min_size
-            if preferred_width < min_width or preferred_height < min_height:
-                raise ValueError("Preferred size is too small compared to the minimum size.")
-        if max_size is not None:
-            max_width, max_height = max_size
-            if preferred_width > max_width or preferred_height > max_height:
-                raise ValueError("Preferred size is too large compared to the maximum size.")
-
+    standard_output_format: ImageFormat = ImageFormat.np
+    
     def pre_run(self, **inputs: RunInput) -> RunInput:
-        for k, v in inputs.items():
-            if self.standardize_input_format:
-                if isinstance(v, PIL.Image):
-                    v = to(v, ImageFormat.np)
-            if self.scale_inputs:
-                v = scale(
-                    v, self.min_input_size, self.max_input_size, self.input_scaling_mode
-                )
-            inputs[k] = v
-        return inputs
+        return self._process_io(
+            io=inputs,
+            standardize_channels=self.standardize_input_channels,
+            standardize_format=self.standardize_input_format,
+            scale=self.scale_inputs,
+            min_size=self.min_input_size,
+            max_size=self.max_input_size,
+            preferred_size=self.preferred_input_size,
+            scaling_mode=self.input_scaling_mode,
+            standard_channels=self.standard_input_channels,
+            standard_format=self.standard_input_format
+        )
 
+    def post_run(self, **outputs: RunOutput) -> RunOutput:
+        return self._process_io(
+            io=outputs,
+            standardize_channels=self.standardize_output_channels,
+            standardize_format=self.standardize_output_format,
+            scale=self.scale_outputs,
+            min_size=self.min_output_size,
+            max_size=self.max_output_size,
+            preferred_size=self.preferred_output_size,
+            scaling_mode=self.output_scaling_mode,
+            standard_channels=self.standard_output_channels,
+            standard_format=self.standard_output_format
+        )
     @classmethod
     def from_func(cls, func: Callable, /, **kwargs):
         return type(
@@ -221,6 +188,26 @@ class Chain(Runnable, Serializable, ABC):
             (FunctionalChain, cls),
             {"func": func, **kwargs},
         )
+
+    def _process_io(self, *, io: dict, standardize_channels: bool, standardize_format: bool,
+                    scale: bool, min_size: int, max_size: int, preferred_size: int,
+                    scaling_mode: str, standard_channels: int, standard_format: str) -> dict:
+        for k, v in io.items():
+            if isinstance(v, PIL.Image):
+                if standardize_channels:
+                    v = v.convert("L" if standard_channels == 1 else "RGB") # FIXME: does this work?
+                if standardize_format:
+                    v = to(v, standard_format)
+                if scale:
+                    v = scale(
+                        v,
+                        min_size=min_size,
+                        max_size=max_size,
+                        preferred_size=preferred_size,
+                        scaling_mode=scaling_mode
+                    )
+                io[k] = v
+        return io
 
 
 class FunctionalChain(Chain):

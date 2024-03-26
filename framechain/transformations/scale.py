@@ -1,6 +1,8 @@
 from enum import Enum
-from typing import Literal
+from typing import Literal, Optional
 import cv2
+
+from framechain.schema import Size
 
 
 class ScalingMode(Enum):
@@ -13,8 +15,23 @@ class ScalingMode(Enum):
     scale_both = "scale_both"
 
 
-def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
-    """Scale an image to fit within a given size range."""
+def scale(img, /, *, min_size: Optional[Size] = None, max_size: Optional[Size] = None, preferred_size: Optional[Size] = None, scaling_mode: ScalingMode = ScalingMode.strict):
+    """Scale an image to fit within a given size range.
+    
+    Provide the max_size and min_size OR the preferred_size BUT NOT BOTH.
+    """
+    
+    if min_size is None and max_size is None and preferred_size is None:
+        return img
+
+    if preferred_size is not None:        
+        assert max_size is None and min_size is None, "Provide max_size and min_size OR preferred_size."
+        # assert min_size[0] <= preferred_size[0], "Preferred width must be greater than or equal to min_width."
+        # assert preferred_size[0] <= max_size[0], "Preferred width must be less than or equal to max_width."
+        # assert min_size[1] <= preferred_size[1], "Preferred height must be greater than or equal to min_height."
+        # assert preferred_size[1] <= max_size[1], "Preferred height must be less than or equal to max_height."
+        min_size = preferred_size
+        max_size = preferred_size
 
     h, w = img.shape[:2]
     min_h, min_w = min_size
@@ -25,7 +42,7 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
 
     match h_cond, w_cond:
         case -1, -1:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.no_scale:
                     pass
                 case ScalingMode.scale_to_width:
@@ -47,9 +64,9 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case ScalingMode.scale_both:
                     img = cv2.resize(img, (min_w, min_h))
                 case _:
-                    raise ValueError(f"Invalid scaling mode: {mode}")
+                    raise ValueError(f"Invalid scaling mode: {scaling_mode}")
         case -1, 0:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.no_scale:
                     pass
                 case ScalingMode.scale_to_width:
@@ -67,9 +84,9 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case ScalingMode.scale_both:
                     img = cv2.resize(img, (w, min_h))
                 case _:
-                    raise ValueError(f"Invalid scaling mode: {mode}")
+                    raise ValueError(f"Invalid scaling mode: {scaling_mode}")
         case -1, 1:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.no_scale:
                     pass
                 case ScalingMode.scale_to_width:
@@ -90,9 +107,9 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case ScalingMode.scale_both:
                     img = cv2.resize(img, (max_w, min_h))
                 case _:
-                    raise ValueError(f"Invalid scaling mode: {mode}")
+                    raise ValueError(f"Invalid scaling mode: {scaling_mode}")
         case 0, -1:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.no_scale:
                     pass
                 case ScalingMode.scale_to_width:
@@ -110,9 +127,9 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case ScalingMode.scale_both:
                     img = cv2.resize(img, (min_w, h))
                 case _:
-                    raise ValueError(f"Invalid scaling mode: {mode}")
+                    raise ValueError(f"Invalid scaling mode: {scaling_mode}")
         case 0, 0:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.strict:
                     pass
                 case ScalingMode.scale_both:
@@ -120,7 +137,7 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case _:
                     pass
         case 0, 1:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.no_scale:
                     pass
                 case ScalingMode.scale_to_width:
@@ -136,9 +153,9 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case ScalingMode.scale_both:
                     img = cv2.resize(img, (max_w, h))
                 case _:
-                    raise ValueError(f"Invalid scaling mode: {mode}")
+                    raise ValueError(f"Invalid scaling mode: {scaling_mode}")
         case 1, -1:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.no_scale:
                     pass
                 case ScalingMode.scale_to_width:
@@ -161,9 +178,9 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case ScalingMode.scale_both:
                     img = cv2.resize(img, (min_w, max_h))
                 case _:
-                    raise ValueError(f"Invalid scaling mode: {mode}")
+                    raise ValueError(f"Invalid scaling mode: {scaling_mode}")
         case 1, 0:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.no_scale:
                     pass
                 case ScalingMode.scale_to_width:
@@ -181,9 +198,9 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case ScalingMode.scale_both:
                     img = cv2.resize(img, (w, max_h))
                 case _:
-                    raise ValueError(f"Invalid scaling mode: {mode}")
+                    raise ValueError(f"Invalid scaling mode: {scaling_mode}")
         case 1, 1:
-            match mode:
+            match scaling_mode:
                 case ScalingMode.no_scale:
                     pass
                 case ScalingMode.scale_to_width:
@@ -202,7 +219,7 @@ def scale(img, max_size, min_size, mode: ScalingMode = ScalingMode.strict):
                 case ScalingMode.scale_both:
                     img = cv2.resize(img, (max_w, max_h))
                 case _:
-                    raise ValueError(f"Invalid scaling mode: {mode}")
+                    raise ValueError(f"Invalid scaling mode: {scaling_mode}")
         case _:
             raise ValueError(f"Invalid condition: {h_cond}, {w_cond}")
 
