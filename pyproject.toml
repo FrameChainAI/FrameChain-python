@@ -10,6 +10,9 @@ python = "^3.10"
 pydantic = "^2.5.3"
 numpy = "^1.26.3"
 opencv-python = "^4.9.0.80"
+typingx = "^0.6.0"
+pillow = "^10.2.0"
+stringcase = "^1.2.0"
 
 
 [tool.poetry.group.dev.dependencies]

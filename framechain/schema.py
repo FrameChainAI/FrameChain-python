@@ -1,43 +1,18 @@
 from enum import Enum
-from typing import Callable, Literal
-import PIL
-import numpy as np
+from typing import Callable, Literal, Optional, Self
 from framechain.transformations.scale import ScalingMode, scale
 import hashlib
-
-from framechain.utils import standardize_images_in_dict
-
-type Size = tuple[int, int] | tuple[float, float]
-type Image = PIL.Image | np.ndarray
-type ImageSeq = list[Image]
-
-
-class ImageFormat(Enum):
-    PIL = "PIL"
-    np = "np"
-
-
-def to(image, format: ImageFormat):
-    if format == ImageFormat.PIL:
-        return image if isinstance(image, PIL.Image) else PIL.Image.fromarray(image)
-    if format == ImageFormat.np:
-        return image if isinstance(image, np.ndarray) else np.array(image)
-
-
 from abc import ABC, abstractmethod
-from typing import Literal, Optional, Self
 
+import stringcase
 import numpy as np
-
-from abc import ABC
-
 from pydantic import BaseModel
 
 
 class Serializable(ABC, BaseModel):
     type_id: str  # should be unique for each model and remain constant
     version: str  # should be updated when the model changes
-    meta: dict  # should contain any additional information about the model
+    meta: dict  # should contain any additional information about the model schema itself (not instance data)
 
     @abstractmethod
     def serialize(self) -> str:
@@ -134,81 +109,13 @@ class ParallelRunnables(CompositeRunnable):
 
 class Chain(Runnable, Serializable, ABC):
 
-    min_input_size: Optional[Size] = None
-    max_input_size: Optional[Size] = None
-    preferred_input_size: Optional[Size] = None
-    scale_inputs: bool = False
-    standardize_input_channels: bool = False
-    standard_input_channels: Optional[int] = 3
-    input_scaling_mode: ScalingMode
-    standardize_input_format: bool = True
-    standard_input_format: ImageFormat = ImageFormat.np
-
-    min_output_size: Optional[Size] = None
-    max_output_size: Optional[Size] = None
-    preferred_output_size: Optional[Size] = None
-    scale_outputs: bool = False
-    standardize_output_channels: bool = False
-    standard_output_channels: Optional[int] = 3
-    output_scaling_mode: ScalingMode
-    standardize_output_format: bool = True
-    standard_output_format: ImageFormat = ImageFormat.np
-    
-    def pre_run(self, **inputs: RunInput) -> RunInput:
-        return self._process_io(
-            io=inputs,
-            standardize_channels=self.standardize_input_channels,
-            standardize_format=self.standardize_input_format,
-            scale=self.scale_inputs,
-            min_size=self.min_input_size,
-            max_size=self.max_input_size,
-            preferred_size=self.preferred_input_size,
-            scaling_mode=self.input_scaling_mode,
-            standard_channels=self.standard_input_channels,
-            standard_format=self.standard_input_format
-        )
-
-    def post_run(self, **outputs: RunOutput) -> RunOutput:
-        return self._process_io(
-            io=outputs,
-            standardize_channels=self.standardize_output_channels,
-            standardize_format=self.standardize_output_format,
-            scale=self.scale_outputs,
-            min_size=self.min_output_size,
-            max_size=self.max_output_size,
-            preferred_size=self.preferred_output_size,
-            scaling_mode=self.output_scaling_mode,
-            standard_channels=self.standard_output_channels,
-            standard_format=self.standard_output_format
-        )
     @classmethod
-    def from_func(cls, func: Callable, /, **kwargs):
-        return type(
-            f"{func.__name__}{cls.__name__}",
-            (FunctionalChain, cls),
-            {"func": func, **kwargs},
-        )
-
-    def _process_io(self, *, io: dict, standardize_channels: bool, standardize_format: bool,
-                    scale: bool, min_size: int, max_size: int, preferred_size: int,
-                    scaling_mode: str, standard_channels: int, standard_format: str) -> dict:
-        for k, v in io.items():
-            if isinstance(v, PIL.Image):
-                if standardize_channels:
-                    v = v.convert("L" if standard_channels == 1 else "RGB") # FIXME: does this work?
-                if standardize_format:
-                    v = to(v, standard_format)
-                if scale:
-                    v = scale(
-                        v,
-                        min_size=min_size,
-                        max_size=max_size,
-                        preferred_size=preferred_size,
-                        scaling_mode=scaling_mode
-                    )
-                io[k] = v
-        return io
-
+    def from_func(cls, **kwargs):
+        def dec(func: Callable):
+            name = kwargs.get('name', stringcase.camelcase(f"{func.__name__}{cls.__name__}"))
+            bases = kwargs.get('bases', (FunctionalChain, cls))
+            return type(name, bases, {"func": func, **kwargs})
+        return dec
 
 class FunctionalChain(Chain):
     func: Callable
