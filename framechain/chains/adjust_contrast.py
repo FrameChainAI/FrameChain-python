@@ -4,6 +4,8 @@ from framechain.utils.channel_format import ChannelFormat, convert_channel_forma
 from framechain.utils.types import Image
 from PIL import ImageOps, ImageEnhance, ImageFilter
 
+
 @chain()
-def greyscale(image: Image) -> Image:
-    return convert_channel_format(image, to=ChannelFormat.L)
+def adjust_contrast(image: Image, factor: float) -> Image:
+    enhancer = ImageEnhance.Contrast(image)
+    return enhancer.enhance(factor)

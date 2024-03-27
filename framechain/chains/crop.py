@@ -5,5 +5,5 @@ from framechain.utils.types import Image
 from PIL import ImageOps, ImageEnhance, ImageFilter
 
 @chain()
-def greyscale(image: Image) -> Image:
-    return convert_channel_format(image, to=ChannelFormat.L)
+def crop(image: Image, left: int, top: int, right: int, bottom: int) -> Image:
+    return image.crop((left, top, right, bottom))

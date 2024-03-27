@@ -5,5 +5,8 @@ from framechain.utils.types import Image
 from PIL import ImageOps, ImageEnhance, ImageFilter
 
 @chain()
-def greyscale(image: Image) -> Image:
-    return convert_channel_format(image, to=ChannelFormat.L)
+def flip(image: Image, horizontal: bool = True) -> Image:
+    if horizontal:
+        return image.transpose(Image.FLIP_LEFT_RIGHT)
+    else:
+        return image.transpose(Image.FLIP_TOP_BOTTOM)

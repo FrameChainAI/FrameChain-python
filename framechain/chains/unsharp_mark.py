@@ -4,6 +4,7 @@ from framechain.utils.channel_format import ChannelFormat, convert_channel_forma
 from framechain.utils.types import Image
 from PIL import ImageOps, ImageEnhance, ImageFilter
 
+
 @chain()
-def greyscale(image: Image) -> Image:
-    return convert_channel_format(image, to=ChannelFormat.L)
+def unsharp_mask(image: Image, radius: float, percent: int, threshold: int) -> Image:
+    return image.filter(ImageFilter.UnsharpMask(radius, percent, threshold))

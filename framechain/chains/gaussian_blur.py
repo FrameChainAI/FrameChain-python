@@ -5,5 +5,5 @@ from framechain.utils.types import Image
 from PIL import ImageOps, ImageEnhance, ImageFilter
 
 @chain()
-def greyscale(image: Image) -> Image:
-    return convert_channel_format(image, to=ChannelFormat.L)
+def gaussian_blur(image: Image, radius: float) -> Image:
+    return image.filter(ImageFilter.GaussianBlur(radius))

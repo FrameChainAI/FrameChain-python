@@ -4,6 +4,7 @@ from framechain.utils.channel_format import ChannelFormat, convert_channel_forma
 from framechain.utils.types import Image
 from PIL import ImageOps, ImageEnhance, ImageFilter
 
+
 @chain()
-def greyscale(image: Image) -> Image:
-    return convert_channel_format(image, to=ChannelFormat.L)
+def edge_detection(image: Image) -> Image:
+    return image.filter(ImageFilter.FIND_EDGES)
