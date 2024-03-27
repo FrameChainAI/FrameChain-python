@@ -1,10 +1,10 @@
 from typing import Optional
 
 from pydantic import validator
-from framechain.schema import Chain, Image, RunInput, RunOutput
+from framechain.schema import BaseChain, Image, RunInput, RunOutput
 from framechain.utils.types import list2D
 
-class GridMerge(Chain):
+class GridMerge(BaseChain):
     input_names: list2D[str]
     output_name: str
     

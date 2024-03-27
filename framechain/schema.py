@@ -7,6 +7,8 @@ import stringcase
 import numpy as np
 from pydantic import BaseModel
 
+from framechain.utils.image_type import ImageType
+
 
 class Serializable(ABC, BaseModel):
     type_id: str  # should be unique for each model and remain constant
@@ -106,10 +108,11 @@ class ParallelRunnables(CompositeRunnable):
         return self
 
 
-class Chain(Runnable, Serializable, ABC):
+class BaseChain(Runnable, Serializable, ABC):
 
     inputs: list[str]
     outputs: list[str]
+    
 
     @classmethod
     def from_func(cls, **kwargs):
@@ -120,7 +123,40 @@ class Chain(Runnable, Serializable, ABC):
         return dec
 
 
-class ModelBase(Chain, ABC):
+class BaseImageChain(BaseChain, ABC):
+    input_channels: Optional[int] = None
+    input_type: Optional[ImageType] = None
+    output_channels: Optional[int] = None
+    output_type: Optional[ImageType] = None
+
+    def pre_run(self, inputs: RunInput) -> RunInput:
+        processed_inputs = self._process_io(
+            image=inputs[self.input_image],
+            channel_format=self.input_channels,
+            image_type=self.input_type
+        )
+        inputs.update(processed_inputs)
+        return super().pre_run(inputs)
+
+    def post_run(self, inputs: RunInput, outputs: RunOutput) -> RunOutput:
+        processed_outputs = self._process_io(
+            image=outputs[self.output_image],
+            channel_format=self.standard_output_channels,
+            image_type=self.standard_output_format
+        )
+        outputs.update(processed_outputs)
+        return super().post_run(inputs, outputs)
+        
+    def _process_io(self, *, image: Image, channel_format: int, image_type: str) -> dict:
+        for k, v in image.items():
+            if channel_format is not None:
+                v = convert_channel_format(v, channel_format)
+            if image_type is not None:
+                v = convert_type(v, image_type)
+            image[k] = v
+        return image
+
+class ModelBase(BaseChain, ABC):
     pass
 
 class ImageModel(ModelBase, ABC):

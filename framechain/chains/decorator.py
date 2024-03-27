@@ -2,10 +2,10 @@
 from typing import Callable
 
 from framechain.chains.simple_chain import SimpleChain
-from framechain.schema import Chain
+from framechain.schema import BaseChain
 
 
-def chain(dict_mode=False, inputs: list[str]=None, outputs: list[str]=None, base_chain: type[Chain] = SimpleChain, **kwargs):
+def chain(dict_mode=False, inputs: list[str]=None, outputs: list[str]=None, base_chain: type[BaseChain] = SimpleChain, **kwargs):
     """Makes a chain from a single function.
     
     Example:

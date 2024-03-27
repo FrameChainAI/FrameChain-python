@@ -5,9 +5,9 @@ from typing import Callable, Self
 
 from pydantic import BaseModel
 
-from framechain.schema import Chain, RunInput, RunOutput
+from framechain.schema import BaseChain, RunInput, RunOutput
 
-class FunctionalChain(Chain):
+class FunctionalChain(BaseChain):
     _func: Callable[[RunInput], RunOutput]
     _func_hash: str
 

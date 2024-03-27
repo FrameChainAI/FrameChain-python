@@ -1,6 +1,6 @@
-from framechain.schema import Chain
+from framechain.schema import BaseChain
 
 
-class Merge(Chain):
+class Merge(BaseChain):
     pass
 

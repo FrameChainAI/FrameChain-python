@@ -1,6 +1,6 @@
-from framechain.schema import Chain, Image
+from framechain.schema import BaseChain, Image
 
 
-class Split(Chain):
+class Split(BaseChain):
     pass
 
