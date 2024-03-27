@@ -5,7 +5,7 @@ from framechain.chains.simple_chain import SimpleChain
 from framechain.schema import Chain
 
 
-def chain(inputs: list[str], outputs: list[str], base_chain: type[Chain] = SimpleChain, **kwargs):
+def chain(dict_mode=False, inputs: list[str]=None, outputs: list[str]=None, base_chain: type[Chain] = SimpleChain, **kwargs):
     """Makes a chain from a single function.
     
     Example:
@@ -20,7 +20,8 @@ def chain(inputs: list[str], outputs: list[str], base_chain: type[Chain] = Simpl
             or consider subclassing `Chain` directly.
     """
     def dec(func: Callable):
-        NewChain = SimpleChain.from_func(func, inputs=inputs, outputs=outputs, **kwargs)
-        return NewChain()
+        dec = SimpleChain.from_func(dict_mode=dict_mode, inputs=inputs, outputs=outputs, **kwargs)
+        cls = dec(func)
+        return cls(**kwargs)
 
     return dec

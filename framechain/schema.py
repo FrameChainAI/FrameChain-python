@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import Callable, Literal, Optional, Self
-from framechain.transformations.scale import ScalingMode, scale
-import hashlib
+from framechain.chains.functional import FunctionalChain
 from abc import ABC, abstractmethod
 
 import stringcase
@@ -121,6 +120,9 @@ class Chain(Runnable, Serializable, ABC):
         return dec
 
 
-class ImageModel(Chain, ABC):
+class ModelBase(Chain, ABC):
+    pass
+
+class ImageModel(ModelBase, ABC):
     model_name: str
     model_type: str
