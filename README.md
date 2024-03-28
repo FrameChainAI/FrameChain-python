@@ -1,13 +1,14 @@
-Here's my attempt at completing your thought and fleshing out the FrameChain framework idea:
+# FrameChain 🖼️⛓️
+
+> A Framework for Composing Chains of Transformations on Images using Large Vision Models
 
 FrameChain is a Python library that enables composing chains of transformations on images using large vision models (LVMs). It provides a high-level interface for working with LVMs, making it easy to load pre-trained models, apply them to images, and chain together multiple transformations.
 
 Key concepts in FrameChain:
 
-- Frames: Images or sequences of images that serve as the input and output of LVMs. 
-- Links: Individual LVMs that perform specific visual transformations on frames.
-- Chains: Sequences of links that are applied to frames in order. Chains allow composing complex visual reasoning pipelines.
-- Spatial Templates: Declarative specifications of desired image layouts, regions of interest, and transformations to apply. They guide the application of LVMs.
+- **Chains**: Individual operations that transform images or image sequences. Networks of chains allow composing complex visual reasoning pipelines.
+- **Frames**: Declarative specifications of desired image compositions
+- **VLMs**: Large Vision Models that perform specific visual transformations on images or image sequences
 
 FrameChain vs LangChain:
 

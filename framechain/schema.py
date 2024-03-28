@@ -6,8 +6,10 @@ from abc import ABC, abstractmethod
 import stringcase
 import numpy as np
 from pydantic import BaseModel
+from framechain.utils.channel_format import convert_channel_format
 
-from framechain.utils.image_type import ImageType
+from framechain.utils.image_type import ImageType, convert_type
+from framechain.utils.types import Image
 
 
 class Serializable(ABC, BaseModel):
